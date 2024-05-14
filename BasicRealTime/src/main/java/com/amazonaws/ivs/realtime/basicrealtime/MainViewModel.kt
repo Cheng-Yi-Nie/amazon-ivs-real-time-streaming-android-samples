@@ -12,16 +12,17 @@ import com.amazonaws.ivs.broadcast.ImageLocalStageStream
 import com.amazonaws.ivs.broadcast.LocalStageStream
 import com.amazonaws.ivs.broadcast.ParticipantInfo
 import com.amazonaws.ivs.broadcast.Stage
+import com.amazonaws.ivs.broadcast.StageAudioManager
 import com.amazonaws.ivs.broadcast.StageRenderer
 import com.amazonaws.ivs.broadcast.StageStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class MainViewModel(application: Application) : AndroidViewModel(application), Stage.Strategy, StageRenderer {
+class MainViewModel(private val application: Application) : AndroidViewModel(application), Stage.Strategy, StageRenderer {
 
     /// If `canPublish` is `false`, the sample application will not ask for permissions or publish to the stage
     /// This will be a view-only participant.
-    val canPublish = true
+    val canPublish = false
 
     // App State
     internal val participantAdapter = ParticipantAdapter()
@@ -42,8 +43,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
     private var streams = mutableListOf<LocalStageStream>()
 
     init {
-        deviceDiscovery = DeviceDiscovery(application)
-
         if (canPublish) {
             // Create a local participant immediately to render our camera preview and microphone stats
             val localParticipant = StageParticipant(true, null)
@@ -51,17 +50,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
         }
     }
 
-    override fun onCleared() {
-        stage?.release()
-        deviceDiscovery?.release()
-        deviceDiscovery = null
-        super.onCleared()
-    }
-
     internal fun joinStage(token: String) {
         if (_connectionState.value != Stage.ConnectionState.DISCONNECTED) {
             // If we're already connected to a stage, leave it.
             stage?.leave()
+            stage?.release()
+            deviceDiscovery?.release()
+            deviceDiscovery = null
         } else {
             if (token.isEmpty()) {
                 Toast.makeText(getApplication(), "Empty Token", Toast.LENGTH_SHORT).show()
@@ -70,6 +65,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
             try {
                 // Destroy the old stage first before creating a new one.
                 stage?.release()
+
+                /**
+                 * Requirement:
+                 * We need to use the call channel for IVS and the media channel for music.
+                 * Problem:
+                 * After connecting the Bluetooth headphones, the IVS sound comes out of the device's speakers instead, and it is very quiet and has a lot of echo.
+                 */
+                if (canPublish) {
+                    StageAudioManager.getInstance(application)
+                        .setPreset(StageAudioManager.UseCasePreset.STUDIO)
+                } else {
+                    StageAudioManager.getInstance(application)
+                        .setConfiguration(
+                            StageAudioManager.Source.VOICE_PERFORMANCE,
+                            StageAudioManager.ContentType.MUSIC,
+                            StageAudioManager.Usage.VOICE_COMMUNICATION
+                        )
+                }
+
+                deviceDiscovery = DeviceDiscovery(application)
+
+                permissionGranted()
+
                 val stage = Stage(getApplication(), token, this)
                 stage.addRenderer(this)
                 stage.join()
@@ -85,7 +103,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
         publishEnabled = enabled
     }
 
-    internal fun permissionGranted() {
+    private fun permissionGranted() {
         val deviceDiscovery = deviceDiscovery ?: return
         streams.clear()
         val devices = deviceDiscovery.listLocalDevices()
@@ -125,7 +143,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
 
     override fun shouldSubscribeToParticipant(stage: Stage, participantInfo: ParticipantInfo): Stage.SubscribeType {
         // Subscribe to both audio and video for all publishing participants.
-        return Stage.SubscribeType.AUDIO_VIDEO
+        return Stage.SubscribeType.AUDIO_ONLY
     }
     //endregion
 

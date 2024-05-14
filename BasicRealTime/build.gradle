@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace 'com.amazonaws.ivs.realtime.basicrealtime'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.amazonaws.ivs.realtime.basicrealtime"
         minSdk 28
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -24,17 +24,17 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
     dataBinding.enabled true
 }
 
 dependencies {
-    implementation 'com.amazonaws:ivs-broadcast:1.15.0:stages@aar'
+    implementation 'com.amazonaws:ivs-broadcast:1.16.0:stages@aar'
 
     // The Amazon IVS SDK works without OkHttp, but because many applications include it,
     // so we are including it in this demo app to mimic real world behavior
@@ -45,6 +45,9 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+
+    // Media 3
+    implementation "androidx.media3:media3-exoplayer:1.2.1"
 
     def lifecycle_version = "2.6.1"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
