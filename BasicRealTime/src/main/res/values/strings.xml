@@ -5,4 +5,6 @@
     <string name="token">Participant Token</string>
     <string name="publish">Publish</string>
     <string name="state">State: %1$s</string>
+    <string name="publish_token">this_is_token_for_publish</string>
+    <string name="song_url">https://dl.musopen.org/recordings/896103a9-6f79-42e4-97b8-6d48aec87d39.mp3</string>
 </resources>

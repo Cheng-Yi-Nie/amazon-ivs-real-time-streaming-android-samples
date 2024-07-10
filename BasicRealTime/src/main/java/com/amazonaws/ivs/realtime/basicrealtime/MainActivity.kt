@@ -16,6 +16,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.recyclerview.widget.RecyclerView
 import com.amazonaws.ivs.broadcast.Bluetooth
 import com.amazonaws.ivs.broadcast.Stage.ConnectionState
@@ -33,12 +40,14 @@ class MainActivity : AppCompatActivity() {
     // App State
     private val viewModel: MainViewModel by viewModels()
 
+    private var exoPlayer: ExoPlayer? = null
+
     // View Lifecycle
+    @UnstableApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Bluetooth.startBluetoothSco(applicationContext)
         checkboxPublish = findViewById(R.id.main_publish_checkbox)
         recyclerView = findViewById(R.id.main_recycler_view)
         buttonJoin = findViewById(R.id.main_join)
@@ -74,6 +83,8 @@ class MainActivity : AppCompatActivity() {
                 finish()
             }
         })
+
+        initPlayer()
     }
 
     override fun onStart() {
@@ -84,8 +95,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy();
-        Bluetooth.stopBluetoothSco(applicationContext);
+        exoPlayer?.release()
+        super.onDestroy()
+    }
+
+    @UnstableApi
+    private fun initPlayer() {
+        val dataSourceFactory = DefaultDataSource.Factory(this@MainActivity, DefaultHttpDataSource.Factory())
+        val dataSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+            .createMediaSource(
+                MediaItem.Builder()
+                    .setUri(getString(R.string.song_url))
+                    .build())
+
+        exoPlayer = ExoPlayer.Builder(this@MainActivity)
+            .build()
+            .apply {
+                this.setMediaSource(dataSource, true)
+                this.playWhenReady = true
+                this.repeatMode = Player.REPEAT_MODE_ONE
+            }
+
+        exoPlayer?.prepare()
     }
 
     //region Permissions Related Code

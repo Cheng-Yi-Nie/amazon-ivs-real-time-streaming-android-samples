@@ -12,6 +12,7 @@ import com.amazonaws.ivs.broadcast.ImageLocalStageStream
 import com.amazonaws.ivs.broadcast.LocalStageStream
 import com.amazonaws.ivs.broadcast.ParticipantInfo
 import com.amazonaws.ivs.broadcast.Stage
+import com.amazonaws.ivs.broadcast.StageAudioManager
 import com.amazonaws.ivs.broadcast.StageRenderer
 import com.amazonaws.ivs.broadcast.StageStream
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application), S
     private var streams = mutableListOf<LocalStageStream>()
 
     init {
+        StageAudioManager.getInstance(application)
+            .setPreset(StageAudioManager.UseCasePreset.STUDIO)
+
         deviceDiscovery = DeviceDiscovery(application)
 
         if (canPublish) {
